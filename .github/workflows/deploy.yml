@@ -1,0 +1,32 @@
+name: Deploy to home-web-server
+
+on:
+  push:
+    branches:
+      -main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Build Vue.js App
+        run: |
+          npm install
+          npm build
+
+      - name: Copy Files to Orange Pi
+        uses: appleboy/scp-action@0.1.7
+        with:
+          host: 10.0.0.16
+          username: orangepi
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/*"
+          target: "~/home-web-server/dist"
+
+      - name: Restart Docker Container
+        run: |
+          ssh -i ${{ secrets.SSH_PRIVATE_KEY }} orangepi@10.0.0.16 "cd ~/home-web-server && docker-compose up --build -d"
